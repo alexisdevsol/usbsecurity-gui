@@ -6,6 +6,6 @@ __author__ = 'Alexis Torres Valdes'
 __author_email__ = 'alexis89.dev@gmail.com'
 __credits__ = ['Alexis Torres Valdes']
 __maintainer__ = 'Alexis Torres Valdes'
-__license__ = 'GPL'
+__license__ = 'LGPL'
 __copyright__ = 'Copyright 2021 Alexis Torres Valdes'
 __status__ = 'Production'
