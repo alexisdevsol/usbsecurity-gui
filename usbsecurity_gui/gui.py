@@ -5,10 +5,15 @@
 usbsecurity-gui is the program for the graphical interface of USBSecurity.
 """
 
+import platform
 import os
 import argparse
+from subprocess import CalledProcessError, check_output
+
 import webview
 import logging
+
+from re import match
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -27,6 +32,64 @@ ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+
+
+def cef_detect():
+    if platform.system() == 'Linux':
+        try:
+            output = check_output('chromium-browser --version', shell=True)
+            _match = match('Chromium (?P<version>\d+).\d+.\d+.\d+ .*', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+        try:
+            output = check_output('google-chrome --version', shell=True)
+            _match = match('Google Chrome (?P<version>\d+).\d+.\d+.\d+ .*', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+    if platform.system() == 'Windows':
+        try:
+            output = check_output('dir /B/AD "C:\Program Files (x86)\Google\Chrome\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"', shell=True)
+            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+        try:
+            output = check_output('dir /B/AD "C:\Program Files\Google\Chrome\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"', shell=True)
+            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+        try:
+            output = check_output(
+                'dir /B/AD "C:\Program Files (x86)\Google\Chromium\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"',
+                shell=True)
+            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+        try:
+            output = check_output(
+                'dir /B/AD "C:\Program Files\Google\Chromium\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"',
+                shell=True)
+            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
+            if _match:
+                return 66 < int(_match.groupdict()['version'])
+        except CalledProcessError:
+            pass
+
+    return False
 
 
 def parse_args():
@@ -52,9 +115,6 @@ def parse_args():
                         type=int,
                         default=8888,
                         help='Server port. Default: 8888')
-    parser.add_argument('--cef',
-                        action='store_true',
-                        help='To use Chrome Embedded Framework on Windows. Requires Chrome 66 and higher')
 
     return parser.parse_args()
 
@@ -63,10 +123,10 @@ def main():
     args = parse_args()
     host = args.host
     port = args.port
-    cef = args.cef
 
     webview.create_window('USBSecurity', 'http://%s:%s' % (host, port), width=1024, height=600)
-    if cef:
+    cef_detected = cef_detect()
+    if cef_detected:
         try:
             webview.start(gui='cef')
             return
