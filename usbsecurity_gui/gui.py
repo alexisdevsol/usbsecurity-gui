@@ -128,11 +128,11 @@ def main():
     cef_detected = cef_detect()
     if cef_detected:
         try:
-            webview.start(gui='cef')
+            webview.start(gui='cef', user_agent=about['__title__'])
             return
         except Exception as e:
             logger.warning(e)
-    webview.start()
+    webview.start(user_agent=about['__title__'])
 
 
 if __name__ == '__main__':
