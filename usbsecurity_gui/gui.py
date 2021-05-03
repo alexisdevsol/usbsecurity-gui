@@ -95,8 +95,7 @@ def cef_detect():
 def parse_args():
     __version__ = about['__version__']
 
-    parser = argparse.ArgumentParser(prog='usbsecurity-gui',
-                                     description='usbsecurity-gui is the program for the graphical interface of USBSecurity.')
+    parser = argparse.ArgumentParser(prog=about['__title__'], description=about['__description__'])
 
     parser.add_argument('-v',
                         '--version',
