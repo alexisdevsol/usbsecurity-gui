@@ -1,2 +1,3 @@
 pywebview
 cefpython3
+pythonnet; sys_platform == "win32"
