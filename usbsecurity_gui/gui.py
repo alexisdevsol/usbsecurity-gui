@@ -25,15 +25,12 @@ usbsecurity-gui is the program for the graphical interface of USBSecurity.
 #
 #   Contact: alexis89.dev@gmail.com
 
-import platform
 import os
 import argparse
-from subprocess import CalledProcessError, check_output
+import textwrap
 
 import webview
 import logging
-
-from re import match
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -52,64 +49,6 @@ ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-
-
-def cef_detect():
-    if platform.system() == 'Linux':
-        try:
-            output = check_output('chromium-browser --version', shell=True)
-            _match = match('Chromium (?P<version>\d+).\d+.\d+.\d+ .*', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-        try:
-            output = check_output('google-chrome --version', shell=True)
-            _match = match('Google Chrome (?P<version>\d+).\d+.\d+.\d+ .*', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-    if platform.system() == 'Windows':
-        try:
-            output = check_output('dir /B/AD "C:\Program Files (x86)\Google\Chrome\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"', shell=True)
-            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-        try:
-            output = check_output('dir /B/AD "C:\Program Files\Google\Chrome\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"', shell=True)
-            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-        try:
-            output = check_output(
-                'dir /B/AD "C:\Program Files (x86)\Google\Chromium\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"',
-                shell=True)
-            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-        try:
-            output = check_output(
-                'dir /B/AD "C:\Program Files\Google\Chromium\Application\"|findstr /R /C:"^[0-9].*\..*[0-9]$"',
-                shell=True)
-            _match = match('(?P<version>\d+).\d+.\d+.\d+', output.decode())
-            if _match:
-                return 66 < int(_match.groupdict()['version'])
-        except CalledProcessError:
-            pass
-
-    return False
 
 
 def parse_args():
@@ -134,6 +73,18 @@ def parse_args():
                         type=int,
                         default=8888,
                         help='Server port. Default: 8888')
+    parser.add_argument('--engine',
+                        nargs='?',
+                        choices=['gtk', 'qt', 'edgechromium', 'edgehtml', 'mshtml', 'cef'],
+                        help=textwrap.dedent('''
+                        Platform: GTK; Code: gtk; Render: WebKit; Provider: WebKit2.
+                        Platform: macOS; Render: WebKit; Provider: WebKit.WKWebView (bundled with OS).
+                        Platform: QT; Code: qt; Render: WebKit; Provider: QtWebEngine / QtWebKit.
+                        Platform: Windows; Code: edgechromium; Render: Chromium; Provider: > .NET Framework 4.6.2 and Edge Runtime installed; Browser compatibility: Ever-green Chromium.
+                        Platform: Windows; Code: edgehtml; Render: EdgeHTML; Provider: > .NET Framework 4.6.2 and Windows 10 build 17110.
+                        Platform: Windows; Code: mshtml; Render: MSHTML; Provider: MSHTML via .NET / System.Windows.Forms.WebBrowser; Browser compatibility: IE11 (Windows 10/8/7).
+                        Platform: Windows; Code: cef; Render: CEF; Provider: CEF Python; Browser compatibility: Chrome 66.
+                        '''))
 
     return parser.parse_args()
 
@@ -142,16 +93,13 @@ def main():
     args = parse_args()
     host = args.host
     port = args.port
+    engine = args.engine
 
     webview.create_window('USBSecurity', 'http://%s:%s' % (host, port), width=1024, height=600)
-    cef_detected = cef_detect()
-    if cef_detected:
-        try:
-            webview.start(gui='cef', user_agent=about['__title__'])
-            return
-        except Exception as e:
-            logger.warning(e)
-    webview.start(user_agent=about['__title__'])
+    if engine:
+        webview.start(gui=engine, user_agent=about['__title__'])
+    else:
+        webview.start(user_agent=about['__title__'])
 
 
 if __name__ == '__main__':
